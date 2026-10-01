@@ -17,7 +17,6 @@ jobs:
         env:
           ACTIVITY_TOKEN: ${{ secrets.ACTIVITY_TOKEN }}
         run: |
-          echo "token length: ${#ACTIVITY_TOKEN}"
           python bot/devlog.py
       - name: Commit
         run: |
