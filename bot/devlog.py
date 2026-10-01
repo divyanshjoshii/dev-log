@@ -4,7 +4,7 @@ Usage:
     python bot/devlog.py --dry-run            # print today's entry
     python bot/devlog.py --date 2026-10-01    # write log/2026/2026-10-01.md
 
-Needs GITHUB_TOKEN (read access) in the environment for live runs.
+Needs ACTIVITY_TOKEN (read access) in the environment for live runs.
 """
 import argparse
 import json
@@ -128,9 +128,9 @@ def main():
            if args.date else now.replace(hour=0, minute=0, second=0, microsecond=0))
     end = min(day + timedelta(days=1), now)
 
-    token = os.environ.get("GITHUB_TOKEN")
+    token = os.environ.get("ACTIVITY_TOKEN")
     if not token:
-        raise SystemExit("GITHUB_TOKEN is not set")
+        raise SystemExit("ACTIVITY_TOKEN is not set")
     summary = summarize(fetch(day, end, token))
     text = render(day, summary)
     guard(text, summary["private_names"])

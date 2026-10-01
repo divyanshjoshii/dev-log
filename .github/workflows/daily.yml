@@ -15,8 +15,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: Write today's entry
         env:
-          GITHUB_TOKEN: ${{ secrets.ACTIVITY_TOKEN }}
-        run: python bot/devlog.py
+          ACTIVITY_TOKEN: ${{ secrets.ACTIVITY_TOKEN }}
+        run: |
+          echo "token length: ${#ACTIVITY_TOKEN}"
+          python bot/devlog.py
       - name: Commit
         run: |
           git config user.name "Divyansh Joshi"
