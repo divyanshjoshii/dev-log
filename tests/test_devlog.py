@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "bot"))
-import devlog  # noqa: E402
+import devlog
 
 DAY = datetime(2026, 10, 1, tzinfo=devlog.TZ)
 
@@ -15,9 +15,14 @@ def collection(repos=(), prs=0, issues=0, reviews=0):
         "totalIssueContributions": issues,
         "totalPullRequestReviewContributions": reviews,
         "commitContributionsByRepository": [
-            {"repository": {"nameWithOwner": n, "isPrivate": p,
-                            "primaryLanguage": {"name": lang} if lang else None},
-             "contributions": {"totalCount": c}}
+            {
+                "repository": {
+                    "nameWithOwner": n,
+                    "isPrivate": p,
+                    "primaryLanguage": {"name": lang} if lang else None,
+                },
+                "contributions": {"totalCount": c},
+            }
             for n, p, lang, c in repos
         ],
     }
@@ -29,10 +34,14 @@ class RenderTest(unittest.TestCase):
         self.assertIn("No GitHub activity today", text)
 
     def test_private_repo_never_named(self):
-        s = devlog.summarize(collection([
-            ("divyanshjoshii/saathi", True, "Python", 3),
-            ("divyanshjoshii/workout-tracker", False, "JavaScript", 2),
-        ]))
+        s = devlog.summarize(
+            collection(
+                [
+                    ("divyanshjoshii/saathi", True, "Python", 3),
+                    ("divyanshjoshii/workout-tracker", False, "JavaScript", 2),
+                ]
+            )
+        )
         text = devlog.render(DAY, s)
         self.assertNotIn("saathi", text)
         self.assertIn("private repositories: 3", text)
@@ -40,10 +49,14 @@ class RenderTest(unittest.TestCase):
         self.assertIn("Commits: 5", text)
 
     def test_private_language_not_listed(self):
-        s = devlog.summarize(collection([
-            ("divyanshjoshii/saathi", True, "Rust", 3),
-            ("divyanshjoshii/workout-tracker", False, "JavaScript", 2),
-        ]))
+        s = devlog.summarize(
+            collection(
+                [
+                    ("divyanshjoshii/saathi", True, "Rust", 3),
+                    ("divyanshjoshii/workout-tracker", False, "JavaScript", 2),
+                ]
+            )
+        )
         text = devlog.render(DAY, s)
         self.assertNotIn("Rust", text)
         self.assertIn("JavaScript", text)

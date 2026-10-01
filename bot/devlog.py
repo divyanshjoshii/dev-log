@@ -6,6 +6,7 @@ Usage:
 
 Needs ACTIVITY_TOKEN (read access) in the environment for live runs.
 """
+
 import argparse
 import json
 import os
@@ -36,14 +37,16 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
 
 
 def fetch(day_start, day_end, token):
-    body = json.dumps({
-        "query": QUERY,
-        "variables": {
-            "login": USER,
-            "from": day_start.astimezone(timezone.utc).isoformat(),
-            "to": day_end.astimezone(timezone.utc).isoformat(),
-        },
-    }).encode()
+    body = json.dumps(
+        {
+            "query": QUERY,
+            "variables": {
+                "login": USER,
+                "from": day_start.astimezone(timezone.utc).isoformat(),
+                "to": day_end.astimezone(timezone.utc).isoformat(),
+            },
+        }
+    ).encode()
     req = urllib.request.Request(
         "https://api.github.com/graphql",
         data=body,
@@ -97,9 +100,11 @@ def render(day, s):
         lines.append(f"- [{name}](https://github.com/{name}): {n}")
     if s["private_commits"]:
         lines.append(f"- private repositories: {s['private_commits']}")
-    extras = [f"{s[k]} {label}" for k, label in
-              (("prs", "pull requests"), ("issues", "issues"), ("reviews", "reviews"))
-              if s[k]]
+    extras = [
+        f"{s[k]} {label}"
+        for k, label in (("prs", "pull requests"), ("issues", "issues"), ("reviews", "reviews"))
+        if s[k]
+    ]
     if extras:
         lines += ["", "Also: " + ", ".join(extras) + "."]
     if s["languages"]:
@@ -124,8 +129,11 @@ def main():
     args = ap.parse_args()
 
     now = datetime.now(TZ)
-    day = (datetime.strptime(args.date, "%Y-%m-%d").replace(tzinfo=TZ)
-           if args.date else now.replace(hour=0, minute=0, second=0, microsecond=0))
+    day = (
+        datetime.strptime(args.date, "%Y-%m-%d").replace(tzinfo=TZ)
+        if args.date
+        else now.replace(hour=0, minute=0, second=0, microsecond=0)
+    )
     end = min(day + timedelta(days=1), now)
 
     token = os.environ.get("ACTIVITY_TOKEN")
