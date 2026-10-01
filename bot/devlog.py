@@ -16,7 +16,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 USER = "divyanshjoshii"
-LOG_REPO = f"{USER}/dev-log"  # excluded so the bot does not log itself
+LOG_REPO = f"{USER}/dev-log"  # only its own "log:" commits are left out
+BOT_PREFIX = "log: "
 TZ = timezone(timedelta(hours=5, minutes=30))  # IST
 
 QUERY = """
@@ -62,14 +63,38 @@ def fetch(day_start, day_end, token):
     return data["data"]["user"]["contributionsCollection"]
 
 
-def summarize(collection):
+def real_commits(messages):
+    """Commits in dev-log that are real work, not the bot's own daily entry."""
+    return sum(1 for m in messages if not m.startswith(BOT_PREFIX))
+
+
+def fetch_own_commits(day_start, day_end, token):
+    since = day_start.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    until = day_end.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    url = f"https://api.github.com/repos/{LOG_REPO}/commits?author={USER}&since={since}&until={until}&per_page=100"
+    req = urllib.request.Request(
+        url, headers={"Authorization": f"bearer {token}", "User-Agent": "dev-log"}
+    )
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        return real_commits(c["commit"]["message"] for c in json.load(resp))
+
+
+def activity(day_start, day_end, token):
+    """Everything for one day: GitHub's contributions plus dev-log work without the bot's commit."""
+    return summarize(fetch(day_start, day_end, token), fetch_own_commits(day_start, day_end, token))
+
+
+def summarize(collection, own_commits=0):
     """Private repos contribute only a commit count. Their names and
     languages never enter the summary (names are kept for the leak guard)."""
     public, private_commits, languages, private_names = {}, 0, {}, set()
+    if own_commits:
+        public[LOG_REPO] = own_commits
+        languages["Python"] = own_commits
     for item in collection["commitContributionsByRepository"]:
         repo = item["repository"]
         if repo["nameWithOwner"] == LOG_REPO:
-            continue
+            continue  # counted above, without the bot's own daily commit
         count = item["contributions"]["totalCount"]
         if repo["isPrivate"]:
             private_commits += count
@@ -143,7 +168,7 @@ def main():
     token = os.environ.get("ACTIVITY_TOKEN")
     if not token:
         raise SystemExit("ACTIVITY_TOKEN is not set")
-    summary = summarize(fetch(day, end, token))
+    summary = activity(day, end, token)
     text = render(day, summary)
     guard(text, summary["private_names"])
 

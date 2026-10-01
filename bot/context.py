@@ -10,7 +10,7 @@ import urllib.request
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from devlog import TZ, USER, fetch, guard, render, summarize
+from devlog import TZ, USER, activity, guard, render
 from notify import NO_ACTIVITY
 
 DAYS = 30
@@ -47,7 +47,7 @@ def day_entry(day, log_dir, token):
     if path.exists():
         return path.read_text(encoding="utf-8")
     start = datetime(day.year, day.month, day.day, tzinfo=TZ)
-    summary = summarize(fetch(start, start + timedelta(days=1), token))
+    summary = activity(start, start + timedelta(days=1), token)
     text = render(start, summary)
     guard(text, summary["private_names"])
     return text

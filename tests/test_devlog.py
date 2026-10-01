@@ -73,9 +73,16 @@ class RenderTest(unittest.TestCase):
         self.assertNotIn("No GitHub activity", text)
         self.assertIn("other private contributions (count only): 2", text)
 
-    def test_dev_log_itself_is_excluded(self):
-        s = devlog.summarize(collection([(devlog.LOG_REPO, False, None, 1)]))
-        self.assertIn("No GitHub activity today", devlog.render(DAY, s))
+    def test_bot_commits_are_not_counted_but_real_work_is(self):
+        self.assertEqual(
+            devlog.real_commits(["log: 2026-10-01", "Add chat bot", "log: 2026-10-02"]), 1
+        )
+        bot_only = devlog.summarize(collection([(devlog.LOG_REPO, False, None, 1)]), own_commits=0)
+        self.assertIn("No GitHub activity today", devlog.render(DAY, bot_only))
+        real = devlog.summarize(collection([(devlog.LOG_REPO, False, None, 3)]), own_commits=2)
+        text = devlog.render(DAY, real)
+        self.assertIn("Commits: 2", text)
+        self.assertIn("dev-log", text)
 
 
 if __name__ == "__main__":
