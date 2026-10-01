@@ -67,6 +67,12 @@ class ContextTest(unittest.TestCase):
         self.assertTrue(text.startswith("# FACTS"))
         self.assertIn("Last day with activity: 2026-10-06", text)
 
+    def test_unknown_last_day_when_log_is_young(self):
+        from datetime import date
+
+        text = context.build(date(2026, 10, 2), 2, [], [], first=date(2026, 10, 1))
+        self.assertIn("unknown, before the log started on 2026-10-01", text)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -51,8 +51,15 @@ def recent_days(log_dir, today):
     return out
 
 
-def build(today, streak, repo_lines, days):
+def first_logged(log_dir):
+    files = sorted(Path(log_dir).glob("*/*.md"))
+    return datetime.strptime(files[0].stem, "%Y-%m-%d").date() if files else None
+
+
+def build(today, streak, repo_lines, days, first=None):
     last = "today" if streak == 0 else (today - timedelta(days=streak)).isoformat()
+    if first and today - timedelta(days=streak) < first:
+        last = f"unknown, before the log started on {first.isoformat()}"
     lines = [
         "# FACTS",
         f"Today: {today.isoformat()}",
@@ -77,6 +84,7 @@ def main():
         idle_streak("log", today),
         [repo_line(r, token) for r in repos],
         recent_days("log", today),
+        first_logged("log"),
     )
     Path("context.md").write_text(text, encoding="utf-8")
     print(f"wrote context.md ({len(text)} chars, {len(repos)} public repos)")
