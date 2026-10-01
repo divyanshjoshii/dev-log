@@ -24,7 +24,8 @@ class handler(BaseHTTPRequestHandler):
     def do_POST(self):
         env = os.environ
         got = self.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
-        if not hmac.compare_digest(got, core.webhook_secret(env["TELEGRAM_BOT_TOKEN"])):
+        expected = core.webhook_secret(env["TELEGRAM_BOT_TOKEN"])
+        if not hmac.compare_digest(got.encode(), expected.encode()):
             return self._done(403)
         try:
             length = int(self.headers.get("Content-Length", 0))
