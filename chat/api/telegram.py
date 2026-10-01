@@ -27,14 +27,19 @@ class handler(BaseHTTPRequestHandler):
         expected = core.webhook_secret(env["TELEGRAM_BOT_TOKEN"])
         if not hmac.compare_digest(got.encode(), expected.encode()):
             return self._done(403)
+        message = {}
         try:
             length = int(self.headers.get("Content-Length", 0))
             message = json.loads(self.rfile.read(length)).get("message") or {}
             reply = core.reply_for(message, env)
             if reply:
                 send(env["TELEGRAM_BOT_TOKEN"], message["chat"]["id"], reply)
-        except Exception as exc:  # noqa: BLE001  always answer 200 or Telegram retries; log type only
-            print("error:", type(exc).__name__)
+        except Exception as exc:  # noqa: BLE001  always answer 200 or Telegram retries
+            detail = f"{type(exc).__name__} {getattr(exc, 'code', '')}".strip()
+            print("error:", detail)
+            chat = message.get("chat", {}).get("id")
+            if str(chat) == str(env.get("TELEGRAM_CHAT_ID")):  # only ever tell the owner
+                send(env["TELEGRAM_BOT_TOKEN"], chat, f"Something went wrong ({detail}).")
         self._done()
 
     def do_GET(self):
