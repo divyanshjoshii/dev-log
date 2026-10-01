@@ -88,19 +88,55 @@ class FallbackTest(unittest.TestCase):
         self.assertEqual(cm.exception.code, 403)
 
 
+class ProviderTest(unittest.TestCase):
+    def test_groq_used_when_gemini_fails(self):
+        def gemini(*a):
+            raise TimeoutError
+
+        env = {**ENV, "GROQ_API_KEY": "g"}
+        out = core.answer(env, "c", "q", gemini=gemini, groq=lambda *a: "from groq")
+        self.assertEqual(out, "from groq")
+
+    def test_error_surfaces_without_groq_key(self):
+        def gemini(*a):
+            raise TimeoutError
+
+        with self.assertRaises(TimeoutError):
+            core.answer(ENV, "c", "q", gemini=gemini, groq=lambda *a: "x")
+
+    def test_timeouts_are_retried_then_fall_back_to_second_model(self):
+        seen = []
+
+        def call(key, model, ctx, q):
+            seen.append(model)
+            if model == "main":
+                raise TimeoutError
+            return "ok"
+
+        out = core.ask_with_fallback("k", "main", "c", "q", call=call, sleep=lambda s: None)
+        self.assertEqual((out, seen[-1]), ("ok", core.FALLBACK_MODEL))
+
+
 class ContextTest(unittest.TestCase):
-    def test_build_has_facts_first(self):
-        from datetime import date
+    NONE = "# d\n\nNo GitHub activity today. Took the day off.\n"
+    BUSY = "# d\n\nCommits: 3\n"
 
-        text = context.build(date(2026, 10, 10), 4, ["- r"], ["### d"])
+    def test_streak_and_last_active_day(self):
+        from datetime import date, timedelta
+
+        today = date(2026, 10, 10)
+        entries = [(today - timedelta(days=n), self.NONE if n < 2 else self.BUSY) for n in range(5)]
+        text = context.build(today, entries, ["- r"])
         self.assertTrue(text.startswith("# FACTS"))
-        self.assertIn("Last day with activity: 2026-10-06", text)
+        self.assertIn("up to today): 2", text)
+        self.assertIn("Last day with activity: 2026-10-08", text)
 
-    def test_unknown_last_day_when_log_is_young(self):
-        from datetime import date
+    def test_all_idle_says_none_in_window(self):
+        from datetime import date, timedelta
 
-        text = context.build(date(2026, 10, 2), 2, [], [], first=date(2026, 10, 1))
-        self.assertIn("unknown, before the log started on 2026-10-01", text)
+        today = date(2026, 10, 10)
+        entries = [(today - timedelta(days=n), self.NONE) for n in range(3)]
+        self.assertIn("none in the last 3 days", context.build(today, entries, []))
 
 
 if __name__ == "__main__":

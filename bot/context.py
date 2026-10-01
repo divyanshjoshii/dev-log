@@ -7,11 +7,11 @@ Only public repositories and the public daily log go in. Needs ACTIVITY_TOKEN.
 import json
 import os
 import urllib.request
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 
-from devlog import TZ, USER
-from notify import idle_streak
+from devlog import TZ, USER, fetch, guard, render, summarize
+from notify import NO_ACTIVITY
 
 DAYS = 30
 REPOS = 8
@@ -41,25 +41,38 @@ def repo_line(repo, token):
     )
 
 
-def recent_days(log_dir, today):
-    out = []
-    for n in range(DAYS):
-        day = today - timedelta(days=n)
-        path = Path(log_dir) / f"{day:%Y}" / f"{day:%Y-%m-%d}.md"
-        if path.exists():
-            out.append(f"### {day:%Y-%m-%d}\n" + path.read_text(encoding="utf-8").split("\n", 2)[2])
-    return out
+def day_entry(day, log_dir, token):
+    """Use the written log entry if there is one, otherwise ask GitHub for that day."""
+    path = Path(log_dir) / f"{day:%Y}" / f"{day:%Y-%m-%d}.md"
+    if path.exists():
+        return path.read_text(encoding="utf-8")
+    start = datetime(day.year, day.month, day.day, tzinfo=TZ)
+    summary = summarize(fetch(start, start + timedelta(days=1), token))
+    text = render(start, summary)
+    guard(text, summary["private_names"])
+    return text
 
 
-def first_logged(log_dir):
-    files = sorted(Path(log_dir).glob("*/*.md"))
-    return date.fromisoformat(files[0].stem) if files else None
+def recent_days(log_dir, today, token):
+    """Last DAYS days, newest first, as (date, text) pairs."""
+    days = [today - timedelta(days=n) for n in range(DAYS)]
+    return [(d, day_entry(d, log_dir, token)) for d in days]
 
 
-def build(today, streak, repo_lines, days, first=None):
+def idle_days(entries):
+    streak = 0
+    for _, text in entries:
+        if NO_ACTIVITY not in text:
+            break
+        streak += 1
+    return streak
+
+
+def build(today, entries, repo_lines):
+    streak = idle_days(entries)
     last = "today" if streak == 0 else (today - timedelta(days=streak)).isoformat()
-    if first and today - timedelta(days=streak) < first:
-        last = f"unknown, before the log started on {first.isoformat()}"
+    if streak == len(entries):
+        last = f"none in the last {len(entries)} days"
     lines = [
         "# FACTS",
         f"Today: {today.isoformat()}",
@@ -69,9 +82,11 @@ def build(today, streak, repo_lines, days, first=None):
         "## Public repos",
         *repo_lines,
         "",
-        "## Recent days (newest first)",
-        *days,
+        f"## Last {len(entries)} days (newest first, private repos are counts only)",
     ]
+    for day, text in entries:
+        body = text.split("\n", 2)[2].strip()
+        lines.append(f"### {day.isoformat()}\n{body}")
     return "\n".join(lines) + "\n"
 
 
@@ -81,10 +96,8 @@ def main():
     repos = public_repos(token)
     text = build(
         today,
-        idle_streak("log", today),
+        recent_days("log", today, token),
         [repo_line(r, token) for r in repos],
-        recent_days("log", today),
-        first_logged("log"),
     )
     Path("context.md").write_text(text, encoding="utf-8")
     print(f"wrote context.md ({len(text)} chars, {len(repos)} public repos)")

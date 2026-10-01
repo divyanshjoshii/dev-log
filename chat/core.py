@@ -11,6 +11,8 @@ CONTEXT_URL = "https://raw.githubusercontent.com/divyanshjoshii/dev-log/main/con
 MAX_INPUT = 500
 MAX_REPLY = 1500
 DEFAULT_MODEL = "gemini-flash-latest"
+GROQ_MODEL = "llama-3.1-8b-instant"
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 FALLBACK_MODEL = "gemini-flash-lite-latest"
 RETRY_CODES = (429, 500, 503)
 
@@ -74,8 +76,12 @@ def status_from(context):
     return context.split("## Public repos")[0].replace("# FACTS\n", "").strip()
 
 
+def build_prompt(context, question):
+    return f"CONTEXT:\n<<<\n{context}\n>>>\n\nQUESTION:\n<<<\n{question}\n>>>"
+
+
 def build_request(context, question):
-    prompt = f"CONTEXT:\n<<<\n{context}\n>>>\n\nQUESTION:\n<<<\n{question}\n>>>"
+    prompt = build_prompt(context, question)
     return {
         "system_instruction": {"parts": [{"text": SYSTEM}]},
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
@@ -95,7 +101,7 @@ def ask_gemini(api_key, model, context, question):
         data=json.dumps(build_request(context, question)).encode(),
         headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
     )
-    with urllib.request.urlopen(req, timeout=12) as resp:
+    with urllib.request.urlopen(req, timeout=10) as resp:
         data = json.load(resp)
     try:
         return data["candidates"][0]["content"]["parts"][0]["text"]
@@ -118,10 +124,50 @@ def ask_with_fallback(api_key, model, context, question, call=ask_gemini, sleep=
                     raise
                 if attempt == 0:
                     sleep(1.5)
+            except (TimeoutError, urllib.error.URLError) as exc:
+                last = exc  # network trouble or timeout: same as a busy model
+                if attempt == 0:
+                    sleep(1.5)
     raise last
 
 
-def reply_for(message, env, context_loader=fetch_context, model_call=ask_with_fallback):
+def ask_groq(api_key, model, context, question):
+    body = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": SYSTEM},
+            {"role": "user", "content": build_prompt(context, question)},
+        ],
+        "max_tokens": 500,
+        "temperature": 0.3,
+    }
+    req = urllib.request.Request(
+        GROQ_URL,
+        data=json.dumps(body).encode(),
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "User-Agent": "git-guy-bot",
+        },
+    )
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        data = json.load(resp)
+    return data["choices"][0]["message"]["content"]
+
+
+def answer(env, context, question, gemini=ask_with_fallback, groq=ask_groq):
+    """Gemini first. If it fails for any reason and a Groq key exists, use Groq."""
+    try:
+        return gemini(
+            env["GEMINI_API_KEY"], env.get("GEMINI_MODEL") or DEFAULT_MODEL, context, question
+        )
+    except (TimeoutError, urllib.error.URLError, KeyError):
+        if not env.get("GROQ_API_KEY"):
+            raise
+        return groq(env["GROQ_API_KEY"], env.get("GROQ_MODEL") or GROQ_MODEL, context, question)
+
+
+def reply_for(message, env, context_loader=fetch_context, model_call=answer):
     """Return the text to send back, or None to stay silent (not the owner)."""
     if str(message.get("chat", {}).get("id")) != str(env["TELEGRAM_CHAT_ID"]):
         return None
@@ -133,5 +179,4 @@ def reply_for(message, env, context_loader=fetch_context, model_call=ask_with_fa
     ok, canned = check_input(text)
     if not ok:
         return canned
-    model = env.get("GEMINI_MODEL") or DEFAULT_MODEL
-    return redact(model_call(env["GEMINI_API_KEY"], model, context_loader(), text))
+    return redact(model_call(env, context_loader(), text))
