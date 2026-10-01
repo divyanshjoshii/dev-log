@@ -9,11 +9,12 @@ import devlog
 DAY = datetime(2026, 10, 1, tzinfo=devlog.TZ)
 
 
-def collection(repos=(), prs=0, issues=0, reviews=0):
+def collection(repos=(), prs=0, issues=0, reviews=0, restricted=0):
     return {
         "totalPullRequestContributions": prs,
         "totalIssueContributions": issues,
         "totalPullRequestReviewContributions": reviews,
+        "restrictedContributionsCount": restricted,
         "commitContributionsByRepository": [
             {
                 "repository": {
@@ -65,6 +66,12 @@ class RenderTest(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             devlog.guard("worked on Saathi today", {"divyanshjoshii/saathi"})
         devlog.guard("worked on workout-tracker", {"divyanshjoshii/saathi"})
+
+    def test_hidden_private_contributions_count_as_activity(self):
+        s = devlog.summarize(collection(restricted=2))
+        text = devlog.render(DAY, s)
+        self.assertNotIn("No GitHub activity", text)
+        self.assertIn("other private contributions (count only): 2", text)
 
     def test_dev_log_itself_is_excluded(self):
         s = devlog.summarize(collection([(devlog.LOG_REPO, False, None, 1)]))

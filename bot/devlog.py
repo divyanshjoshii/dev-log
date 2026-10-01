@@ -26,6 +26,7 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
       totalPullRequestContributions
       totalIssueContributions
       totalPullRequestReviewContributions
+      restrictedContributionsCount
       commitContributionsByRepository(maxRepositories: 100) {
         repository { nameWithOwner isPrivate primaryLanguage { name } }
         contributions { totalCount }
@@ -86,13 +87,14 @@ def summarize(collection):
         "prs": collection["totalPullRequestContributions"],
         "issues": collection["totalIssueContributions"],
         "reviews": collection["totalPullRequestReviewContributions"],
+        "restricted": collection.get("restrictedContributionsCount", 0),
     }
 
 
 def render(day, s):
     total = sum(s["public"].values()) + s["private_commits"]
     lines = [f"# {day:%A, %d %B %Y}", ""]
-    if total + s["prs"] + s["issues"] + s["reviews"] == 0:
+    if total + s["prs"] + s["issues"] + s["reviews"] + s["restricted"] == 0:
         lines.append("No GitHub activity today. Took the day off.")
         return "\n".join(lines) + "\n"
     lines.append(f"Commits: {total}")
@@ -100,6 +102,8 @@ def render(day, s):
         lines.append(f"- [{name}](https://github.com/{name}): {n}")
     if s["private_commits"]:
         lines.append(f"- private repositories: {s['private_commits']}")
+    if s["restricted"]:
+        lines.append(f"- other private contributions (count only): {s['restricted']}")
     extras = [
         f"{s[k]} {label}"
         for k, label in (("prs", "pull requests"), ("issues", "issues"), ("reviews", "reviews"))
