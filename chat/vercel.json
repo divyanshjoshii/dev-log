@@ -1,3 +1,3 @@
 {
-  "functions": { "api/telegram.py": { "maxDuration": 30 } }
+  "functions": { "api/telegram.py": { "maxDuration": 60 } }
 }

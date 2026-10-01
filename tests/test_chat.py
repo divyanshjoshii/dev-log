@@ -59,6 +59,35 @@ class GuardTest(unittest.TestCase):
         self.assertNotEqual(core.webhook_secret("a"), core.webhook_secret("b"))
 
 
+class FallbackTest(unittest.TestCase):
+    @staticmethod
+    def err(code):
+        import urllib.error
+
+        return urllib.error.HTTPError("u", code, "x", {}, None)
+
+    def test_busy_model_is_retried_then_falls_back(self):
+        seen = []
+
+        def call(key, model, ctx, q):
+            seen.append(model)
+            if model == "main":
+                raise self.err(503)
+            return "from fallback"
+
+        out = core.ask_with_fallback("k", "main", "c", "q", call=call, sleep=lambda s: None)
+        self.assertEqual(out, "from fallback")
+        self.assertEqual(seen, ["main", "main", core.FALLBACK_MODEL])
+
+    def test_bad_key_is_not_retried(self):
+        def call(*a):
+            raise self.err(403)
+
+        with self.assertRaises(Exception) as cm:
+            core.ask_with_fallback("k", "main", "c", "q", call=call, sleep=lambda s: None)
+        self.assertEqual(cm.exception.code, 403)
+
+
 class ContextTest(unittest.TestCase):
     def test_build_has_facts_first(self):
         from datetime import date

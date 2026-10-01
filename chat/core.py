@@ -3,11 +3,16 @@
 import hashlib
 import json
 import re
+import time
+import urllib.error
 import urllib.request
 
 CONTEXT_URL = "https://raw.githubusercontent.com/divyanshjoshii/dev-log/main/context.md"
 MAX_INPUT = 500
 MAX_REPLY = 1500
+DEFAULT_MODEL = "gemini-flash-latest"
+FALLBACK_MODEL = "gemini-flash-lite-latest"
+RETRY_CODES = (429, 500, 503)
 
 SYSTEM = (
     "You are GitGuy, a private assistant for Divyansh. You answer questions about his public "
@@ -90,7 +95,7 @@ def ask_gemini(api_key, model, context, question):
         data=json.dumps(build_request(context, question)).encode(),
         headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
     )
-    with urllib.request.urlopen(req, timeout=25) as resp:
+    with urllib.request.urlopen(req, timeout=12) as resp:
         data = json.load(resp)
     try:
         return data["candidates"][0]["content"]["parts"][0]["text"]
@@ -98,7 +103,25 @@ def ask_gemini(api_key, model, context, question):
         return REFUSAL  # blocked by the model's safety filter or empty
 
 
-def reply_for(message, env, context_loader=fetch_context, model_call=ask_gemini):
+def ask_with_fallback(api_key, model, context, question, call=ask_gemini, sleep=time.sleep):
+    """Retry busy errors once, move on to the fallback model, give up with the last error."""
+    last = None
+    for name in dict.fromkeys([model, FALLBACK_MODEL]):
+        for attempt in range(2):
+            try:
+                return call(api_key, name, context, question)
+            except urllib.error.HTTPError as exc:
+                last = exc
+                if exc.code == 404:
+                    break  # unknown model: try the next one
+                if exc.code not in RETRY_CODES:
+                    raise
+                if attempt == 0:
+                    sleep(1.5)
+    raise last
+
+
+def reply_for(message, env, context_loader=fetch_context, model_call=ask_with_fallback):
     """Return the text to send back, or None to stay silent (not the owner)."""
     if str(message.get("chat", {}).get("id")) != str(env["TELEGRAM_CHAT_ID"]):
         return None
@@ -110,5 +133,5 @@ def reply_for(message, env, context_loader=fetch_context, model_call=ask_gemini)
     ok, canned = check_input(text)
     if not ok:
         return canned
-    model = env.get("GEMINI_MODEL") or "gemini-flash-latest"
+    model = env.get("GEMINI_MODEL") or DEFAULT_MODEL
     return redact(model_call(env["GEMINI_API_KEY"], model, context_loader(), text))
