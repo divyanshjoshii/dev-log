@@ -7,7 +7,7 @@ Only public repositories and the public daily log go in. Needs ACTIVITY_TOKEN.
 import json
 import os
 import urllib.request
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from devlog import TZ, USER
@@ -53,7 +53,7 @@ def recent_days(log_dir, today):
 
 def first_logged(log_dir):
     files = sorted(Path(log_dir).glob("*/*.md"))
-    return datetime.strptime(files[0].stem, "%Y-%m-%d").date() if files else None
+    return date.fromisoformat(files[0].stem) if files else None
 
 
 def build(today, streak, repo_lines, days, first=None):
