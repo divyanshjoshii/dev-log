@@ -23,6 +23,14 @@ TOKEN_EXPIRES = {  # secret name -> the expiry date shown on its GitHub token pa
 WARN_DAYS = {30, 7, 3, 2, 1, 0}
 IDLE_AFTER = 3  # days with no activity before the nudges start
 NO_ACTIVITY = "No GitHub activity today"
+RUN_NAMES = {  # workflow cron string -> the run's name in IST, as shown in alerts
+    "47 4 * * *": "10:17 AM run",
+    "17 8 * * *": "1:47 PM run",
+    "47 11 * * *": "5:17 PM run",
+    "17 15 * * *": "8:47 PM run",
+    "17 17 * * *": "10:47 PM run",
+    "47 18 * * *": "12:17 AM late sweep",
+}
 
 
 def idle_streak(log_dir, today):
@@ -45,6 +53,13 @@ def build_daily(entry_text, streak, today):
         if left in WARN_DAYS:
             lines += ["", f"{name} expires in {left} days. Make a new one and update the secret."]
     return "\n".join(lines)
+
+
+def describe_run(event, schedule):
+    """Name the run for an alert, so a failed sweep is told apart from a failed day run."""
+    if event == "schedule":
+        return RUN_NAMES.get(schedule, "scheduled run")
+    return "manual run"
 
 
 def quiet_hours(now, event):
@@ -77,7 +92,8 @@ def main():
         send(build_daily(text, idle_streak("log", today), today))
     elif mode == "failure":
         run = os.environ.get("RUN_URL", "")
-        send(f"The daily log run failed. {run}".strip())
+        name = describe_run(os.environ.get("EVENT_NAME"), os.environ.get("SCHEDULE"))
+        send(f"The {name} failed. {run}".strip())
     else:
         raise SystemExit("usage: notify.py daily|failure")
 
