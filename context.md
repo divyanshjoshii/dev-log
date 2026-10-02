@@ -4,7 +4,7 @@ Days in a row with no GitHub activity (up to today): 0
 Last day with activity: today
 
 ## Public repos
-- dev-log | Daily log of my GitHub activity | Python | last push 2026-10-01 | open issues 0 | recent commits: Merge pull request #1 from divyanshjoshii/docs/readme; Add README, API docs, license and gitignore; log: 2026-10-01; Count real dev-log work, give the model room to answer; log: 2026-10-01
+- dev-log | Daily log of my GitHub activity | Python | last push 2026-10-01 | open issues 0 | recent commits: log: 2026-10-01; Merge pull request #1 from divyanshjoshii/docs/readme; Add README, API docs, license and gitignore; log: 2026-10-01; Count real dev-log work, give the model room to answer
 - divyanshjoshii | no description | JavaScript | last push 2026-09-28 | open issues 0 | recent commits: feat: show the skill icons in one row; fix: encode commas in the dark icon srcset; feat: trim the profile readme to banner, summary and skills; feat: profile readme
 - groundwork | A Claude Code skill that gives a project a memory - interviews you once, then every session already knows your rules and where you left off | JavaScript | last push 2026-09-24 | open issues 0 | recent commits: Merge pull request #1 from divyanshjoshii/upgrade/skills-v2; map large projects and load setup only when needed; colour the setup diagram and show the makeover step; hand existing projects to /ship docs as a last step; route hard rules to the right blocking mechanism
 - ship | A Claude Code skill for getting work onto GitHub without surprises - every step confirmed, collaborator clashes caught before you push | JavaScript | last push 2026-09-24 | open issues 0 | recent commits: Merge pull request #1 from divyanshjoshii/upgrade/skills-v2; add /ship inbox, a pull request flow and safe rebases; document /ship docs and draw the flow in the README; build the code map during /ship docs too; add /ship docs, a one-time makeover for older projects
@@ -14,6 +14,9 @@ Last day with activity: today
 ### 2026-10-02
 Commits: 2
 - [divyanshjoshii/dev-log](https://github.com/divyanshjoshii/dev-log): 2
+- other private contributions (count only): 3
+
+Also: 1 pull requests.
 
 Languages: Python.
 ### 2026-10-01
