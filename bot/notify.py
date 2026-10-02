@@ -11,12 +11,15 @@ import os
 import sys
 import urllib.parse
 import urllib.request
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from devlog import TZ, report_day
 
-TOKEN_EXPIRES = datetime(2027, 10, 1, tzinfo=TZ).date()  # ACTIVITY_TOKEN, set 1 year out
+TOKEN_EXPIRES = {  # secret name -> the expiry date shown on its GitHub token page
+    "ACTIVITY_TOKEN": date(2027, 10, 1),
+    "DISPATCH_TOKEN": date(2027, 10, 3),
+}
 WARN_DAYS = {30, 7, 3, 2, 1, 0}
 IDLE_AFTER = 3  # days with no activity before the nudges start
 NO_ACTIVITY = "No GitHub activity today"
@@ -37,12 +40,10 @@ def build_daily(entry_text, streak, today):
     lines = ["Today's entry is pushed to dev-log.", ""] + body[2:]
     if streak >= IDLE_AFTER:
         lines += ["", f"You have been offline for {streak} days. Come back and commit something."]
-    left = (TOKEN_EXPIRES - today).days
-    if left in WARN_DAYS:
-        lines += [
-            "",
-            f"ACTIVITY_TOKEN expires in {left} days. Make a new one and update the secret.",
-        ]
+    for name, expires in TOKEN_EXPIRES.items():
+        left = (expires - today).days
+        if left in WARN_DAYS:
+            lines += ["", f"{name} expires in {left} days. Make a new one and update the secret."]
     return "\n".join(lines)
 
 

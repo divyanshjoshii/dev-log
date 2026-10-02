@@ -38,8 +38,12 @@ class MessageTest(unittest.TestCase):
 
     def test_token_expiry_warning(self):
         entry = "# Day\n\nCommits: 1\n"
-        soon = notify.TOKEN_EXPIRES - timedelta(days=7)
-        self.assertIn("expires in 7 days", notify.build_daily(entry, 0, soon))
+        soon = notify.TOKEN_EXPIRES["ACTIVITY_TOKEN"] - timedelta(days=7)
+        out = notify.build_daily(entry, 0, soon)
+        self.assertIn("ACTIVITY_TOKEN expires in 7 days", out)
+        self.assertNotIn("DISPATCH_TOKEN", out)
+        later = notify.TOKEN_EXPIRES["DISPATCH_TOKEN"] - timedelta(days=1)
+        self.assertIn("DISPATCH_TOKEN expires in 1 days", notify.build_daily(entry, 0, later))
         self.assertNotIn("expires", notify.build_daily(entry, 0, TODAY))
 
 
