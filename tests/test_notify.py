@@ -30,6 +30,18 @@ class IdleStreakTest(unittest.TestCase):
             self.assertEqual(notify.idle_streak(d, TODAY), 1)
 
 
+class DescribeRunTest(unittest.TestCase):
+    def test_sweep_is_told_apart_from_day_runs(self):
+        self.assertEqual(notify.describe_run("schedule", "47 18 * * *"), "12:17 AM late sweep")
+        self.assertEqual(notify.describe_run("schedule", "47 4 * * *"), "10:17 AM run")
+        self.assertEqual(notify.describe_run("schedule", "17 17 * * *"), "10:47 PM run")
+
+    def test_unknown_schedule_and_manual_runs(self):
+        self.assertEqual(notify.describe_run("schedule", "0 0 * * *"), "scheduled run")
+        self.assertEqual(notify.describe_run("workflow_dispatch", ""), "manual run")
+        self.assertEqual(notify.describe_run(None, None), "manual run")
+
+
 class QuietHoursTest(unittest.TestCase):
     def at(self, hour):
         from datetime import datetime

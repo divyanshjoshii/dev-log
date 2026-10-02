@@ -86,7 +86,7 @@ Constants in the code: `USER` and `TZ` in `bot/devlog.py`, and `TOKEN_EXPIRES`, 
 
 - Daily: the entry text, plus a line after three or more quiet days in a row. A scheduled run between 00:00 and 06:00 IST sends nothing, so no routine message arrives after midnight. Manual runs always send it.
 - Token expiry: a warning 30, 7, 3, 2, 1 and 0 days before each date in `TOKEN_EXPIRES`, which lists `ACTIVITY_TOKEN` and `DISPATCH_TOKEN`.
-- Failure: a link to the failed run.
+- Failure: the name of the run that failed, such as "10:47 PM run" or "12:17 AM late sweep", and a link to it.
 
 ## Known limits
 
