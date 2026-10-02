@@ -11,6 +11,19 @@ This page lists every outside request the project makes, what each one is for, a
 3. The workflow commits `log/` and `context.md` as `log: YYYY-MM-DD` and pushes.
 4. `python bot/notify.py daily` sends the Telegram message. If any step fails, `notify.py failure` sends an alert with a link to the run.
 
+## The watchdog
+
+`vercel.json` schedules `/api/watchdog` at 13:30 and 16:30 UTC (19:00 and 22:00 IST). Vercel sends `Authorization: Bearer <CRON_SECRET>`, and the function rejects anything else with `401`.
+
+Each check reads this repository's commits since 00:00 UTC today and looks for one whose message starts with `log: `. Until 23:59 IST that window is the same date in UTC and IST.
+
+| Check | A bot commit exists | No bot commit |
+|---|---|---|
+| First (19:00 IST) | Nothing happens | Starts the workflow. Sends an alert only if that fails |
+| Final (22:00 IST) | Nothing happens | Starts the workflow and sends a Telegram alert |
+
+If the commits can't be read, the watchdog starts a run anyway and says so in the alert. Sending `/run` to the Telegram bot starts the same workflow from the owner's chat.
+
 ## Requests the bot makes
 
 | Request | Used by | Purpose |
@@ -19,6 +32,8 @@ This page lists every outside request the project makes, what each one is for, a
 | `GET https://api.github.com/repos/{user}/dev-log/commits?author=&since=&until=` | `bot/devlog.py` | Counts real work in this repository, skipping the bot's own `log:` commits |
 | `GET https://api.github.com/users/{user}/repos?type=owner&sort=pushed` | `bot/context.py` | Lists public repositories for the chat bot's context |
 | `GET https://api.github.com/repos/{owner}/{repo}/commits?per_page=5` | `bot/context.py` | Takes the latest commit messages of each public repository |
+| `POST https://api.github.com/repos/{user}/dev-log/actions/workflows/daily.yml/dispatches` | `chat/core.py` | Starts the workflow for the watchdog and for `/run` |
+| `GET https://api.github.com/repos/{user}/dev-log/commits?since=` | `chat/watch.py` | Checks whether today has a bot commit |
 | `POST https://api.telegram.org/bot{token}/sendMessage` | `bot/notify.py`, `chat/api/telegram.py` | Sends pings and chat replies |
 | `GET https://raw.githubusercontent.com/{user}/dev-log/main/context.md` | `chat/core.py` | Loads the chat bot's context |
 | `POST https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent` | `chat/core.py` | Asks Gemini a question, with the context and safety filters attached |
@@ -35,6 +50,7 @@ Telegram sends each message you write to `POST /api/telegram` on the Vercel proj
 | Missing or wrong `X-Telegram-Bot-Api-Secret-Token` header | `403`, nothing else happens |
 | Message from any chat id except the owner's | `200`, no reply |
 | Normal message | `200`, and the reply is sent through `sendMessage` |
+| `/run` | `200`, the workflow is started, and the owner is told |
 | An error while answering | `200` (so Telegram does not retry), and the owner gets `Something went wrong (<error type>)` |
 | `GET` | `404` |
 
@@ -59,6 +75,8 @@ The secret token is derived from the bot token, so it is not stored anywhere els
 | `TELEGRAM_BOT_TOKEN` | Actions secret, Vercel env | Sending and receiving Telegram messages |
 | `TELEGRAM_CHAT_ID` | Actions secret, Vercel env | Knowing who the owner is |
 | `GEMINI_API_KEY` | Vercel env | Answers |
+| `DISPATCH_TOKEN` | Vercel env | Starting the workflow (a token with Actions write on this repository only) |
+| `CRON_SECRET` | Vercel env | Letting only Vercel's cron call the watchdog |
 | `GEMINI_MODEL` | Vercel env, optional | Overrides the default model |
 | `GROQ_API_KEY`, `GROQ_MODEL` | Vercel env, optional | Fallback answers |
 

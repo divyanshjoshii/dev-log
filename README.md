@@ -71,6 +71,10 @@ Messages from anyone except the owner's chat id are ignored without a reply. For
 - has no tools: no web search, no code execution, no memory between messages
 - tries Gemini first, retries once on a busy or slow response, then falls back to a second Gemini model
 
+## The watchdog
+
+GitHub can start a scheduled run hours late, so a second trigger, independent of GitHub, watches the first. Vercel's cron calls `chat/api/watchdog.py` twice a day. At 19:00 IST it checks for a bot commit today and starts the workflow if there is none. At 22:00 IST it checks again, starts a run if needed, and sends a Telegram alert when the day still had no commit. You can also send `/run` to the Telegram bot to start a run yourself.
+
 ## Repository layout
 
 | Path | What it does |
@@ -80,6 +84,7 @@ Messages from anyone except the owner's chat id are ignored without a reply. For
 | `bot/notify.py` | Telegram pings: daily, idle nudge, failure, token expiry |
 | `chat/core.py` | Chat logic: guards, prompt, Gemini calls, fallback |
 | `chat/api/telegram.py` | The Vercel function that receives Telegram messages |
+| `chat/watch.py`, `chat/api/watchdog.py` | The watchdog: checks each day has a bot commit and starts a run if not |
 | `log/` | The diary, one file per day |
 | `context.md` | What the chat bot is allowed to know |
 | `.github/workflows/daily.yml` | The daily schedule |
