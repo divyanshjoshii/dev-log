@@ -42,6 +42,7 @@ jobs:
       - name: Telegram ping
         if: success() && (github.event_name == 'workflow_dispatch' || github.event.schedule == '17 17 * * *')
         env:
+          EVENT_NAME: ${{ github.event_name }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python bot/notify.py daily

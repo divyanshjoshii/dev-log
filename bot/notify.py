@@ -14,7 +14,7 @@ import urllib.request
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
-from devlog import TZ, report_day
+from devlog import GRACE_HOURS, TZ, report_day
 
 TOKEN_EXPIRES = {  # secret name -> the expiry date shown on its GitHub token page
     "ACTIVITY_TOKEN": date(2027, 10, 1),
@@ -47,6 +47,11 @@ def build_daily(entry_text, streak, today):
     return "\n".join(lines)
 
 
+def quiet_hours(now, event):
+    """A scheduled run between 00:00 and 06:00 IST stays silent. Manual runs always ping."""
+    return event == "schedule" and now.hour < GRACE_HOURS
+
+
 def send(text):
     token, chat = os.environ.get("TELEGRAM_BOT_TOKEN"), os.environ.get("TELEGRAM_CHAT_ID")
     if not (token and chat):
@@ -64,6 +69,9 @@ def main():
     mode = sys.argv[1] if len(sys.argv) > 1 else ""
     today = report_day(datetime.now(TZ))
     if mode == "daily":
+        if quiet_hours(datetime.now(TZ), os.environ.get("EVENT_NAME")):
+            print("Quiet hours (00:00 to 06:00 IST), no daily ping")
+            return
         entry = Path("log") / f"{today:%Y}" / f"{today:%Y-%m-%d}.md"
         text = entry.read_text(encoding="utf-8") if entry.exists() else ""
         send(build_daily(text, idle_streak("log", today), today))

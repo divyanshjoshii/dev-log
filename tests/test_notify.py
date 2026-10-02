@@ -30,6 +30,24 @@ class IdleStreakTest(unittest.TestCase):
             self.assertEqual(notify.idle_streak(d, TODAY), 1)
 
 
+class QuietHoursTest(unittest.TestCase):
+    def at(self, hour):
+        from datetime import datetime
+
+        return datetime(2026, 10, 3, hour, 30, tzinfo=notify.TZ)
+
+    def test_late_scheduled_run_stays_silent(self):
+        self.assertTrue(notify.quiet_hours(self.at(3), "schedule"))
+        self.assertTrue(notify.quiet_hours(self.at(0), "schedule"))
+
+    def test_evening_and_morning_runs_ping(self):
+        self.assertFalse(notify.quiet_hours(self.at(22), "schedule"))
+        self.assertFalse(notify.quiet_hours(self.at(6), "schedule"))
+
+    def test_manual_run_always_pings(self):
+        self.assertFalse(notify.quiet_hours(self.at(3), "workflow_dispatch"))
+
+
 class MessageTest(unittest.TestCase):
     def test_nudge_only_from_three_days(self):
         entry = "# Day\n\nCommits: 1\n"
