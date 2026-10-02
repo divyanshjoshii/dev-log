@@ -8,7 +8,7 @@
 
 A bot that writes a short diary entry about my GitHub activity every day.
 
-Five times a day a GitHub Actions workflow reads what I did so far that day (commits, pull requests, issues, reviews) and saves it as `log/YYYY/YYYY-MM-DD.md` in this repository. On a day with nothing, the entry says so. Nothing is invented, and nothing is backdated.
+Five times a day, plus one quiet sweep after midnight, a GitHub Actions workflow reads what I did that day (commits, pull requests, issues, reviews) and saves it as `log/YYYY/YYYY-MM-DD.md` in this repository. On a day with nothing, the entry says so. Nothing is invented, and nothing is backdated.
 
 A small Telegram bot sits on top of the same data. It pings me once a day, nudges me after three quiet days, and answers questions like "how many commits did I make this week?".
 
@@ -32,7 +32,7 @@ An empty day reads: `No GitHub activity today. Took the day off.`
 %%{init: {"theme":"base","themeVariables":{"background":"#FFFFFF","primaryColor":"#FFFFFF","primaryTextColor":"#0B0B0B","primaryBorderColor":"#4F46E5","lineColor":"#4F46E5","secondaryColor":"#EAE9FC","tertiaryColor":"#FFFFFF","textColor":"#0B0B0B","edgeLabelBackground":"#FFFFFF","clusterBkg":"#FFFFFF","clusterBorder":"#CECECE"}}}%%
 %% palette 97d170e1
 flowchart LR
-    cron["Five runs a day, 10:17 to 22:47 IST"]:::role1 --> wf["GitHub Actions workflow"]:::role1
+    cron["Five runs a day, 10:17 AM to 10:47 PM IST, and a sweep at 12:17 AM"]:::role1 --> wf["GitHub Actions workflow"]:::role1
     wf --> dl["bot/devlog.py"]:::role2
     dl -->|"GraphQL and REST"| gh[("GitHub API")]:::role4
     dl --> log["log/YYYY/date.md"]:::role3
