@@ -42,6 +42,26 @@ class DescribeRunTest(unittest.TestCase):
         self.assertEqual(notify.describe_run(None, None), "manual run")
 
 
+class FailureTextTest(unittest.TestCase):
+    def test_midday_runs_say_later_runs_will_retry(self):
+        for cron in ("47 4 * * *", "17 8 * * *", "47 11 * * *", "17 15 * * *"):
+            out = notify.failure_text("schedule", cron, "http://run")
+            self.assertIn("Later runs will retry today", out)
+            self.assertTrue(out.endswith("http://run"))
+
+    def test_last_run_sweep_and_manual_runs_do_not(self):
+        for event, cron in (
+            ("schedule", "17 17 * * *"),
+            ("schedule", "47 18 * * *"),
+            ("workflow_dispatch", ""),
+        ):
+            self.assertNotIn("retry", notify.failure_text(event, cron))
+
+    def test_names_still_differ(self):
+        self.assertIn("12:17 AM late sweep", notify.failure_text("schedule", "47 18 * * *"))
+        self.assertIn("10:17 AM run", notify.failure_text("schedule", "47 4 * * *"))
+
+
 class QuietHoursTest(unittest.TestCase):
     def at(self, hour):
         from datetime import datetime

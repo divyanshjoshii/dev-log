@@ -55,6 +55,17 @@ def build_daily(entry_text, streak, today):
     return "\n".join(lines)
 
 
+MIDDAY_RUNS = {"47 4 * * *", "17 8 * * *", "47 11 * * *", "17 15 * * *"}  # 10:17 AM to 8:47 PM
+
+
+def failure_text(event, schedule, url=""):
+    """The alert for a failed run. A day run still has later runs to cover the day."""
+    text = f"The {describe_run(event, schedule)} failed."
+    if event == "schedule" and schedule in MIDDAY_RUNS:
+        text += " Later runs will retry today, so the day is not lost yet."
+    return f"{text} {url}".strip()
+
+
 def describe_run(event, schedule):
     """Name the run for an alert, so a failed sweep is told apart from a failed day run."""
     if event == "schedule":
@@ -92,8 +103,7 @@ def main():
         send(build_daily(text, idle_streak("log", today), today))
     elif mode == "failure":
         run = os.environ.get("RUN_URL", "")
-        name = describe_run(os.environ.get("EVENT_NAME"), os.environ.get("SCHEDULE"))
-        send(f"The {name} failed. {run}".strip())
+        send(failure_text(os.environ.get("EVENT_NAME"), os.environ.get("SCHEDULE"), run))
     else:
         raise SystemExit("usage: notify.py daily|failure")
 
