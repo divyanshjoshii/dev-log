@@ -2,13 +2,15 @@ name: daily-log
 
 on:
   schedule:
-    # Five runs a day, off the busy top of the hour. GitHub can start a run hours late, so
-    # any one of them landing before midnight IST is enough to put a commit on the day.
+    # Five runs a day plus a quiet sweep after midnight, off the busy top of the hour.
+    # GitHub can start a run hours late, so any one of them landing before midnight IST
+    # is enough to put a commit on the day.
     - cron: "47 4 * * *"   # 10:17 IST
     - cron: "17 8 * * *"   # 13:47 IST
     - cron: "47 11 * * *"  # 17:17 IST
     - cron: "17 15 * * *"  # 20:47 IST
     - cron: "17 17 * * *"  # 22:47 IST, the run that sends the Telegram ping
+    - cron: "47 18 * * *"  # 00:17 IST, quiet sweep: finishes the day that just ended
   workflow_dispatch:
 
 permissions:
@@ -36,8 +38,14 @@ jobs:
         run: |
           git config user.name "Divyansh Joshi"
           git config user.email "184637540+divyanshjoshii@users.noreply.github.com"
-          git add log context.md
-          git diff --cached --quiet || git commit -m "log: $(TZ=Asia/Kolkata date +%F)"
+          if [ "${{ github.event.schedule }}" = "47 18 * * *" ]; then
+            # Midnight sweep: commit only if the finished day's entry changed.
+            git add log
+            git diff --cached --quiet || git commit -m "log: $(TZ=Asia/Kolkata date -d '6 hours ago' +%F), late sweep"
+          else
+            git add log context.md
+            git diff --cached --quiet || git commit -m "log: $(TZ=Asia/Kolkata date +%F)"
+          fi
           git push
       - name: Telegram ping
         if: success() && (github.event_name == 'workflow_dispatch' || github.event.schedule == '17 17 * * *')
