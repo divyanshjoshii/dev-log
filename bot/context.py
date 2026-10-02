@@ -10,7 +10,7 @@ import urllib.request
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from devlog import TZ, USER, activity, guard, render
+from devlog import TZ, USER, activity, guard, render, report_day
 from notify import NO_ACTIVITY
 
 DAYS = 30
@@ -92,7 +92,7 @@ def build(today, entries, repo_lines):
 
 def main():
     token = os.environ["ACTIVITY_TOKEN"]
-    today = datetime.now(TZ).date()
+    today = report_day(datetime.now(TZ))
     repos = public_repos(token)
     text = build(
         today,

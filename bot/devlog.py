@@ -150,6 +150,15 @@ def guard(text, private_names):
             raise RuntimeError("leak guard: output mentions a private repo; nothing written")
 
 
+GRACE_HOURS = 6  # a run before 06:00 IST still belongs to the day that just ended
+
+
+def report_day(now):
+    """The IST date a run should report on. A late run after midnight finishes yesterday."""
+    day = now.date()
+    return day - timedelta(days=1) if now.hour < GRACE_HOURS else day
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--date", help="YYYY-MM-DD in IST (default: today)")
@@ -161,7 +170,7 @@ def main():
     day = (
         datetime.strptime(args.date, "%Y-%m-%d").replace(tzinfo=TZ)
         if args.date
-        else now.replace(hour=0, minute=0, second=0, microsecond=0)
+        else datetime.combine(report_day(now), datetime.min.time(), tzinfo=TZ)
     )
     end = min(day + timedelta(days=1), now)
 

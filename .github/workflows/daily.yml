@@ -2,11 +2,21 @@ name: daily-log
 
 on:
   schedule:
-    - cron: "0 18 * * *"  # 23:30 IST
+    # Five runs a day, off the busy top of the hour. GitHub can start a run hours late, so
+    # any one of them landing before midnight IST is enough to put a commit on the day.
+    - cron: "47 4 * * *"   # 10:17 IST
+    - cron: "17 8 * * *"   # 13:47 IST
+    - cron: "47 11 * * *"  # 17:17 IST
+    - cron: "17 15 * * *"  # 20:47 IST
+    - cron: "17 17 * * *"  # 22:47 IST, the run that sends the Telegram ping
   workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: daily-log
+  cancel-in-progress: false
 
 jobs:
   log:
@@ -27,10 +37,10 @@ jobs:
           git config user.name "Divyansh Joshi"
           git config user.email "184637540+divyanshjoshii@users.noreply.github.com"
           git add log context.md
-          git diff --cached --quiet || git commit -m "log: $(date -u +%F)"
+          git diff --cached --quiet || git commit -m "log: $(TZ=Asia/Kolkata date +%F)"
           git push
       - name: Telegram ping
-        if: success()
+        if: success() && (github.event_name == 'workflow_dispatch' || github.event.schedule == '17 17 * * *')
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
