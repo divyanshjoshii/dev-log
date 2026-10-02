@@ -14,7 +14,7 @@ import urllib.request
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from devlog import TZ
+from devlog import TZ, report_day
 
 TOKEN_EXPIRES = datetime(2027, 10, 1, tzinfo=TZ).date()  # ACTIVITY_TOKEN, set 1 year out
 WARN_DAYS = {30, 7, 3, 2, 1, 0}
@@ -61,7 +61,7 @@ def send(text):
 
 def main():
     mode = sys.argv[1] if len(sys.argv) > 1 else ""
-    today = datetime.now(TZ).date()
+    today = report_day(datetime.now(TZ))
     if mode == "daily":
         entry = Path("log") / f"{today:%Y}" / f"{today:%Y-%m-%d}.md"
         text = entry.read_text(encoding="utf-8") if entry.exists() else ""

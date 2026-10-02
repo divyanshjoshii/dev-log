@@ -4,7 +4,7 @@ This page lists every outside request the project makes, what each one is for, a
 
 ## The daily run
 
-`.github/workflows/daily.yml` runs at 18:00 UTC (23:30 IST) and can also be started by hand from the Actions tab. Pushes do not trigger it. The steps:
+`.github/workflows/daily.yml` runs five times a day, at 04:47, 08:17, 11:47, 15:17 and 17:17 UTC (10:17, 13:47, 17:17, 20:47 and 22:47 IST), and can also be started by hand from the Actions tab. Pushes do not trigger it. GitHub sometimes starts a scheduled run hours late, so the extra runs make sure one lands before the day ends. Each run rewrites the same day's entry with everything so far. Only the last run, at 22:47 IST, sends the Telegram message. A run that starts between midnight and 06:00 IST finishes the previous day's entry. The steps:
 
 1. `python bot/devlog.py` writes today's entry.
 2. `python bot/context.py` rebuilds `context.md`.

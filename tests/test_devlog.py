@@ -1,6 +1,6 @@
 import sys
 import unittest
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "bot"))
@@ -27,6 +27,22 @@ def collection(repos=(), prs=0, issues=0, reviews=0, restricted=0):
             for n, p, lang, c in repos
         ],
     }
+
+
+class ReportDayTest(unittest.TestCase):
+    def test_late_run_after_midnight_finishes_yesterday(self):
+        late = datetime(2026, 10, 2, 3, 52, tzinfo=devlog.TZ)
+        self.assertEqual(devlog.report_day(late), date(2026, 10, 1))
+
+    def test_daytime_run_reports_today(self):
+        self.assertEqual(
+            devlog.report_day(datetime(2026, 10, 2, 10, 17, tzinfo=devlog.TZ)),
+            date(2026, 10, 2),
+        )
+        self.assertEqual(
+            devlog.report_day(datetime(2026, 10, 2, 23, 40, tzinfo=devlog.TZ)),
+            date(2026, 10, 2),
+        )
 
 
 class RenderTest(unittest.TestCase):
