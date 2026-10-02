@@ -7,7 +7,8 @@ import time
 import urllib.error
 import urllib.request
 
-CONTEXT_URL = "https://raw.githubusercontent.com/divyanshjoshii/dev-log/main/context.md"
+REPO = "divyanshjoshii/dev-log"
+CONTEXT_URL = f"https://raw.githubusercontent.com/{REPO}/main/context.md"
 MAX_INPUT = 500
 MAX_REPLY = 1500
 DEFAULT_MODEL = "gemini-flash-latest"
@@ -28,7 +29,8 @@ SYSTEM = (
 
 HELP = (
     "Ask me about your GitHub activity, for example: how long since I last worked, what is "
-    "the state of my repos, what did I do this week. /status shows the current facts."
+    "the state of my repos, what did I do this week. /status shows the current facts, "
+    "and /run starts today's log run now."
 )
 REFUSAL = "I can only talk about your public GitHub activity."
 BLOCKED = re.compile(
@@ -49,6 +51,30 @@ SAFETY = [
         "HARM_CATEGORY_DANGEROUS_CONTENT",
     )
 ]
+
+
+def send_telegram(token, chat_id, text):
+    import urllib.parse
+
+    data = urllib.parse.urlencode({"chat_id": chat_id, "text": text}).encode()
+    req = urllib.request.Request(f"https://api.telegram.org/bot{token}/sendMessage", data=data)
+    urllib.request.urlopen(req, timeout=15).read()
+
+
+def dispatch_workflow(token, repo=REPO, ref="main"):
+    """Start the daily-log workflow now. Needs a token with Actions: write on the repo."""
+    req = urllib.request.Request(
+        f"https://api.github.com/repos/{repo}/actions/workflows/daily.yml/dispatches",
+        data=json.dumps({"ref": ref}).encode(),
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+            "User-Agent": "git-guy-bot",
+        },
+        method="POST",
+    )
+    urllib.request.urlopen(req, timeout=15).read()
 
 
 def webhook_secret(bot_token):
@@ -167,7 +193,9 @@ def answer(env, context, question, gemini=ask_with_fallback, groq=ask_groq):
         return groq(env["GROQ_API_KEY"], env.get("GROQ_MODEL") or GROQ_MODEL, context, question)
 
 
-def reply_for(message, env, context_loader=fetch_context, model_call=answer):
+def reply_for(
+    message, env, context_loader=fetch_context, model_call=answer, dispatcher=dispatch_workflow
+):
     """Return the text to send back, or None to stay silent (not the owner)."""
     if str(message.get("chat", {}).get("id")) != str(env["TELEGRAM_CHAT_ID"]):
         return None
@@ -176,6 +204,11 @@ def reply_for(message, env, context_loader=fetch_context, model_call=answer):
         return HELP
     if text == "/status":
         return status_from(context_loader())
+    if text == "/run":
+        if not env.get("DISPATCH_TOKEN"):
+            return "DISPATCH_TOKEN is not set, so I cannot start a run."
+        dispatcher(env["DISPATCH_TOKEN"])
+        return "Started today's log run. The entry should land in about a minute."
     ok, canned = check_input(text)
     if not ok:
         return canned

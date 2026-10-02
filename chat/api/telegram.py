@@ -2,18 +2,10 @@ import hmac
 import json
 import os
 import sys
-import urllib.parse
-import urllib.request
 from http.server import BaseHTTPRequestHandler
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import core
-
-
-def send(token, chat_id, text):
-    data = urllib.parse.urlencode({"chat_id": chat_id, "text": text}).encode()
-    req = urllib.request.Request(f"https://api.telegram.org/bot{token}/sendMessage", data=data)
-    urllib.request.urlopen(req, timeout=15).read()
 
 
 class handler(BaseHTTPRequestHandler):
@@ -33,13 +25,15 @@ class handler(BaseHTTPRequestHandler):
             message = json.loads(self.rfile.read(length)).get("message") or {}
             reply = core.reply_for(message, env)
             if reply:
-                send(env["TELEGRAM_BOT_TOKEN"], message["chat"]["id"], reply)
+                core.send_telegram(env["TELEGRAM_BOT_TOKEN"], message["chat"]["id"], reply)
         except Exception as exc:  # noqa: BLE001  always answer 200 or Telegram retries
             detail = f"{type(exc).__name__} {getattr(exc, 'code', '')}".strip()
             print("error:", detail)
             chat = message.get("chat", {}).get("id")
             if str(chat) == str(env.get("TELEGRAM_CHAT_ID")):  # only ever tell the owner
-                send(env["TELEGRAM_BOT_TOKEN"], chat, f"Something went wrong ({detail}).")
+                core.send_telegram(
+                    env["TELEGRAM_BOT_TOKEN"], chat, f"Something went wrong ({detail})."
+                )
         self._done()
 
     def do_GET(self):
