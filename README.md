@@ -99,7 +99,7 @@ You need a GitHub account, Python 3, and a Telegram bot from @BotFather.
 1. Fork or copy this repository and change `USER` in `bot/devlog.py`.
 2. Create a fine-grained token with read-only `Metadata` and `Contents` on your repositories. Save it as the Actions secret `ACTIVITY_TOKEN`.
 3. Save your bot token and chat id as the Actions secrets `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`.
-4. Set `TOKEN_EXPIRES` in `bot/notify.py` to your token's expiry date.
+4. Set `TOKEN_EXPIRES` in `bot/notify.py` to the expiry dates of your tokens.
 5. Run the workflow once from the Actions tab to check it.
 
 For the chat bot, deploy `chat/` to Vercel with these environment variables: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `GEMINI_API_KEY`. `GEMINI_MODEL`, `GROQ_API_KEY` and `GROQ_MODEL` are optional. Turn off Vercel's deployment protection for the project so Telegram can reach it, then register the webhook. The secret token is the first 32 characters of `sha256("webhook:" + bot token)`. Keep your tokens out of chat and shell history; piping them from the clipboard works.
