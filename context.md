@@ -1,6 +1,6 @@
 # FACTS
-Today: 2026-10-08
-Days in a row with no GitHub activity (up to today): 4
+Today: 2026-10-09
+Days in a row with no GitHub activity (up to today): 5
 Last day with activity: 2026-10-04
 
 ## Public repos
@@ -11,6 +11,8 @@ Last day with activity: 2026-10-04
 - workout-tracker | Online Workout Tracker | TypeScript | last push 2026-09-20 | open issues 0 | recent commits: fix: surface Gemini provider errors; feat: use free Gemini tier for food analysis; feat: add optional photo and text nutrition estimates; feat: add clear exercise movement and template swapping controls; feat: theme food tracking and fix email confirmation routing
 
 ## Last 30 days (newest first, private repos are counts only)
+### 2026-10-09
+No GitHub activity today. Took the day off.
 ### 2026-10-08
 No GitHub activity today. Took the day off.
 ### 2026-10-07
@@ -172,6 +174,4 @@ Commits: 24
 
 Languages: JavaScript, TypeScript.
 ### 2026-09-10
-No GitHub activity today. Took the day off.
-### 2026-09-09
 No GitHub activity today. Took the day off.
