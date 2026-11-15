@@ -1,6 +1,6 @@
 # FACTS
-Today: 2026-11-14
-Days in a row with no GitHub activity (up to today): 1
+Today: 2026-11-15
+Days in a row with no GitHub activity (up to today): 2
 Last day with activity: 2026-11-13
 
 ## Public repos
@@ -11,6 +11,8 @@ Last day with activity: 2026-11-13
 - ship | A Claude Code skill for getting work onto GitHub without surprises - every step confirmed, collaborator clashes caught before you push | JavaScript | last push 2026-09-24 | open issues 0 | recent commits: Merge pull request #1 from divyanshjoshii/upgrade/skills-v2; add /ship inbox, a pull request flow and safe rebases; document /ship docs and draw the flow in the README; build the code map during /ship docs too; add /ship docs, a one-time makeover for older projects
 
 ## Last 30 days (newest first, private repos are counts only)
+### 2026-11-15
+No GitHub activity today. Took the day off.
 ### 2026-11-14
 No GitHub activity today. Took the day off.
 ### 2026-11-13
@@ -87,6 +89,4 @@ Commits: 2
 
 Languages: TypeScript.
 ### 2026-10-17
-No GitHub activity today. Took the day off.
-### 2026-10-16
 No GitHub activity today. Took the day off.
